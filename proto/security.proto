@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package securiryproto;
+// option java_package = "com.alipay.monitorprodgateway.bpfprobe.security";
+// option java_outer_classname = "SecurityConfigAndEvent";
+option go_package = "./securityproto";
+/*
+ protoc --go_out=./securityproto --go_opt=paths=source_relative --go-grpc_out=./securityproto --go-grpc_opt=paths=source_relative security.proto
+ protoc --java_out=. security.proto
+ */
+
+message SecurityEvent {
+  string name = 1;
+  int64 timestamp  = 2;
+  uint32 level = 3;
+  uint32 type = 4;
+  uint32 pid = 5;
+  uint32 tid = 6;
+  uint32 uid = 7;
+  string uname = 8;
+  string pod_name = 9;
+  map<string, string> ext_info = 10;
+}
+
+message SecurityEventRequest {
+  repeated SecurityEvent events = 1;
+  string ip = 2;
+  string hostname = 3;
+}
+
+message SecurityEventResponse {
+  string message = 1;
+}
+
+service SecurityEventService {
+  rpc SendEvent(SecurityEventRequest) returns (SecurityEventResponse);
+}
+
+message Label {
+  string labelName = 1;
+  repeated string values = 2;
+}
+
+message SecurityConfigFilterFile {
+  string path = 1;
+  uint32 perm = 2;
+  string op = 3;
+}
+message SecurityConfigTargetFile{
+  string name = 1;
+  repeated Label labels = 2;
+  repeated SecurityConfigFilterFile files = 3;
+}
+
+message SecurityConfigArgFile{
+  string probeName = 1;
+  repeated SecurityConfigTargetFile targets = 2;
+}
+
+message SecurityConfigProbeFile{
+  repeated SecurityConfigArgFile probes = 1;
+}
+
+message SecurityConfigTargetProcess{
+  string name = 1;
+  repeated Label labels = 2;
+}
+
+// 还得修改，把process下的具体的内容表示出来
+message SecurityConfigArgProcess{
+  string probeName = 1;
+  repeated SecurityConfigTargetProcess targets = 2;
+}
+
+message SecurityConfigProbeProcess{
+  repeated SecurityConfigArgProcess probes = 1;
+}
+
+message SecurityGeneralConfig {
+  string name = 1;
+  int64 updateTimestamp = 2;
+  int32 type = 3;
+  SecurityConfigProbeProcess process = 4;
+  SecurityConfigProbeFile file = 5;
+}
+
+message SecurityState {
+  int64 timestamp = 1;
+  string name = 2;
+  int32 available = 3;
+}
+
+message SecurityStateRequest {
+  SecurityState state = 1;
+  string ip = 2;
+  string hostname = 3;
+}
+
+message SecurityConfigResponse {
+  SecurityGeneralConfig config = 1;
+  int32 configVersion = 2;
+}
+
+service SecurityPullService {
+  rpc PullConfig(SecurityStateRequest) returns (SecurityConfigResponse);
+}
+
